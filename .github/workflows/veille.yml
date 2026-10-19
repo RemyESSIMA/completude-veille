@@ -3,7 +3,7 @@ name: Veille offres Complétude
 on:
   schedule:
     # Heures UTC : couvre 9h-18h à Paris en heure d'été comme en heure d'hiver.
-    # Le script vérifie lui-même l'heure de Paris et ne fait rien en dehors.
+    # Le script vérifie lui-même l'heure de Paris et ne fait rien en dehors (ni quand le Mac est allumé).
     - cron: "*/5 7-17 * * 1-5"
   workflow_dispatch:
 
