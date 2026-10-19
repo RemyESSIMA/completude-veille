@@ -1,0 +1,11 @@
+.env
+node_modules/
+__pycache__/
+.venv/
+*.log
+vu.json
+.jeton.json
+veille.log
+passage_github.txt
+fr.completude.veille.plist
+PROMPT_POUR_UN_AMI.md

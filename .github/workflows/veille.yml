@@ -1,0 +1,58 @@
+name: Veille offres Complétude
+
+on:
+  schedule:
+    # Heures UTC : couvre 9h-18h à Paris en heure d'été comme en heure d'hiver.
+    # Le script vérifie lui-même l'heure de Paris et ne fait rien en dehors.
+    - cron: "*/5 7-17 * * 1-5"
+  workflow_dispatch:
+
+concurrency:
+  group: veille
+  cancel-in-progress: false
+
+jobs:
+  veille:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      TZ: Europe/Paris
+      COMPLETUDE_IDENTIFIANT: ${{ secrets.COMPLETUDE_IDENTIFIANT }}
+      COMPLETUDE_MOT_DE_PASSE: ${{ secrets.COMPLETUDE_MOT_DE_PASSE }}
+      TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      NTFY_CANAL: ${{ secrets.NTFY_CANAL }}
+      DEPARTEMENTS: ${{ vars.DEPARTEMENTS || '75,92,93' }}
+      JOURS: ${{ vars.JOURS || '0,1,2,3,4' }}
+      HEURE_DEBUT: ${{ vars.HEURE_DEBUT || '9' }}
+      HEURE_FIN: ${{ vars.HEURE_FIN || '18' }}
+      ADRESSE_ID: ${{ vars.ADRESSE_ID }}
+      # Signal de vie du Mac : s'il est récent, ce passage ne fait rien.
+      ETAT_MAC: ${{ vars.ETAT_MAC }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Mémoire des offres déjà vues, transmise d'un passage à l'autre.
+      - uses: actions/cache/restore@v4
+        with:
+          path: vu.json
+          key: vu-${{ github.run_id }}
+          restore-keys: vu-
+
+      - name: Vérifier les offres
+        run: python3 veille.py ${{ github.event_name == 'workflow_dispatch' && '--force' || '' }}
+
+      # Seulement si GitHub a réellement fait la vérification (Mac éteint).
+      - uses: actions/cache/save@v4
+        if: always() && hashFiles('passage_github.txt') != ''
+        with:
+          path: vu.json
+          key: vu-${{ github.run_id }}
+
+      # Le Mac récupère ce fichier à son retour, pour ne pas renvoyer les mêmes offres.
+      - uses: actions/upload-artifact@v4
+        if: always() && hashFiles('passage_github.txt') != ''
+        with:
+          name: vu-github
+          path: vu.json
+          retention-days: 7
