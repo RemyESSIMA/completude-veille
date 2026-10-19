@@ -5,7 +5,14 @@ on:
     # Heures UTC : couvre 9h-18h à Paris en heure d'été comme en heure d'hiver.
     # Le script vérifie lui-même l'heure de Paris et ne fait rien en dehors (ni quand le Mac est allumé).
     - cron: "*/5 7-17 * * 1-5"
+  # Aussi déclenché toutes les 5 minutes par cron-job.org (plus fiable que « schedule »).
+  # Ces lancements respectent le signal du Mac ; cocher « forcer » pour un test manuel.
   workflow_dispatch:
+    inputs:
+      forcer:
+        description: "Vérifier même si le Mac est allumé"
+        type: boolean
+        default: false
 
 concurrency:
   group: veille
@@ -40,7 +47,7 @@ jobs:
           restore-keys: vu-
 
       - name: Vérifier les offres
-        run: python3 veille.py ${{ github.event_name == 'workflow_dispatch' && '--force' || '' }}
+        run: python3 veille.py ${{ inputs.forcer && '--force' || '' }}
 
       # Seulement si GitHub a réellement fait la vérification (Mac éteint).
       - uses: actions/cache/save@v4
