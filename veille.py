@@ -354,7 +354,12 @@ def main():
         if isinstance(err, urllib.error.HTTPError) and err.code in (400, 401):
             FICHIER_JETON.unlink(missing_ok=True)
         log(f"Erreur : {err!r}")
-        if time.time() - vus.get("derniere_alerte_erreur", 0) > 2 * 3600:
+        # Le serveur de Complétude a des ratés passagers : on ne prévient
+        # qu'après 3 échecs d'affilée (environ 15 minutes de vraie panne).
+        vus["echecs_consecutifs"] = vus.get("echecs_consecutifs", 0) + 1
+        FICHIER_VUS.write_text(json.dumps(vus, indent=1, ensure_ascii=False))
+        if (vus["echecs_consecutifs"] >= 3
+                and time.time() - vus.get("derniere_alerte_erreur", 0) > 2 * 3600):
             notifier(CONF, "Veille Complétude en panne",
                      f"Impossible de récupérer les offres : {err}", 3, ["warning"])
             vus["derniere_alerte_erreur"] = time.time()
@@ -382,6 +387,7 @@ def main():
     limite = time.time() - 60 * 86400
     vus["offres"] = {k: v for k, v in vus["offres"].items() if v["vu_le"] > limite}
     vus["derniere_alerte_erreur"] = 0
+    vus["echecs_consecutifs"] = 0
     FICHIER_VUS.write_text(json.dumps(vus, indent=1, ensure_ascii=False))
     origine = " (relais GitHub)" if SUR_GITHUB else ""
     log(f"{len(offres)} offres, {nouvelles} nouvelle(s) notifiée(s){origine}")
