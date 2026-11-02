@@ -242,6 +242,13 @@ def jours_compatibles(o):
     return bool(masque & SAMEDI) and frequence == TOUS_LES_15_JOURS
 
 
+DUREE_MIN = 1.5  # heures : 1h30 ou plus
+
+
+def duree_compatible(o):
+    return (o.get("DureeCours") or 0) >= DUREE_MIN
+
+
 def texte_offre(o):
     return (
         f"{o.get('LibelleMatiere')} · {o.get('LibelleCombinaison')}\n"
@@ -399,7 +406,7 @@ def main():
             log(f"Département inconnu pour {ident} ({o.get('Ville')}) : {err!r}")
             continue
         vus["offres"][ident] = {"ville": o.get("Ville"), "dep": dep, "vu_le": time.time()}
-        if dep in deps_voulus and jours_compatibles(o):
+        if dep in deps_voulus and jours_compatibles(o) and duree_compatible(o):
             notifier(CONF, f"📚 Nouvelle offre – {o.get('Ville')} ({dep})",
                      texte_offre(o), 5, ["rotating_light"])
             vus["offres"][ident]["notifie"] = True
