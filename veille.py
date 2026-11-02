@@ -233,11 +233,13 @@ def jours_offre(o):
 
 
 def jours_compatibles(o):
-    """Dimanche possible, ou samedi possible avec un cours tous les 15 jours."""
+    """Tous les cours doivent pouvoir avoir lieu le week-end, au sens strict :
+    le dimanche à 1 cours par semaine au plus, ou le samedi tous les 15 jours."""
     masque = o.get("SyntheseJoursCours") or 0
-    if masque & DIMANCHE:
+    frequence = o.get("NbFrequence") or 99
+    if masque & DIMANCHE and frequence <= 1:
         return True
-    return bool(masque & SAMEDI) and o.get("NbFrequence") == TOUS_LES_15_JOURS
+    return bool(masque & SAMEDI) and frequence == TOUS_LES_15_JOURS
 
 
 def texte_offre(o):
