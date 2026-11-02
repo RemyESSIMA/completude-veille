@@ -221,10 +221,30 @@ def trouver_chat_telegram(conf):
     log("TELEGRAM_CHAT_ID enregistré dans .env")
 
 
+# SyntheseJoursCours : un bit par jour accepté par la famille (lundi = 1 … dimanche = 64).
+JOURS_SEMAINE = ("lun", "mar", "mer", "jeu", "ven", "sam", "dim")
+SAMEDI, DIMANCHE = 32, 64
+TOUS_LES_15_JOURS = 0.5  # valeur de NbFrequence pour « Tous les 15 j »
+
+
+def jours_offre(o):
+    masque = o.get("SyntheseJoursCours") or 0
+    return [nom for i, nom in enumerate(JOURS_SEMAINE) if masque & (1 << i)]
+
+
+def jours_compatibles(o):
+    """Dimanche possible, ou samedi possible avec un cours tous les 15 jours."""
+    masque = o.get("SyntheseJoursCours") or 0
+    if masque & DIMANCHE:
+        return True
+    return bool(masque & SAMEDI) and o.get("NbFrequence") == TOUS_LES_15_JOURS
+
+
 def texte_offre(o):
     return (
         f"{o.get('LibelleMatiere')} · {o.get('LibelleCombinaison')}\n"
         f"{o.get('LibelleFrequence')} – {o.get('LibelleDuree')}\n"
+        f"📅 {', '.join(jours_offre(o)) or 'jours non précisés'}\n"
         f"{o.get('DetailPrix')}\n"
         f"{o.get('DebutCours')}\n"
         f"Réf. {o.get('IdDemande')}"
@@ -377,7 +397,7 @@ def main():
             log(f"Département inconnu pour {ident} ({o.get('Ville')}) : {err!r}")
             continue
         vus["offres"][ident] = {"ville": o.get("Ville"), "dep": dep, "vu_le": time.time()}
-        if dep in deps_voulus:
+        if dep in deps_voulus and jours_compatibles(o):
             notifier(CONF, f"📚 Nouvelle offre – {o.get('Ville')} ({dep})",
                      texte_offre(o), 5, ["rotating_light"])
             vus["offres"][ident]["notifie"] = True
