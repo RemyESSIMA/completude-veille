@@ -232,9 +232,12 @@ def jours_offre(o):
 
 
 def jours_compatibles(o):
-    """Samedi ou dimanche possible, quelle que soit la fréquence."""
+    """Tous les cours doivent pouvoir avoir lieu le samedi ou le dimanche :
+    autant de jours de week-end possibles que de cours par semaine."""
     masque = o.get("SyntheseJoursCours") or 0
-    return bool(masque & (SAMEDI | DIMANCHE))
+    jours_week_end = bool(masque & SAMEDI) + bool(masque & DIMANCHE)
+    frequence = o.get("NbFrequence") or 99
+    return jours_week_end >= 1 and frequence <= jours_week_end
 
 
 DUREE_MIN = 1.5  # heures : 1h30 ou plus
