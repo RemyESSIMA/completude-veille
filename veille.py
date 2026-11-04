@@ -224,7 +224,6 @@ def trouver_chat_telegram(conf):
 # SyntheseJoursCours : un bit par jour accepté par la famille (lundi = 1 … dimanche = 64).
 JOURS_SEMAINE = ("lun", "mar", "mer", "jeu", "ven", "sam", "dim")
 SAMEDI, DIMANCHE = 32, 64
-TOUS_LES_15_JOURS = 0.5  # valeur de NbFrequence pour « Tous les 15 j »
 
 
 def jours_offre(o):
@@ -233,13 +232,9 @@ def jours_offre(o):
 
 
 def jours_compatibles(o):
-    """Tous les cours doivent pouvoir avoir lieu le week-end, au sens strict :
-    le dimanche à 1 cours par semaine au plus, ou le samedi tous les 15 jours."""
+    """Samedi ou dimanche possible, quelle que soit la fréquence."""
     masque = o.get("SyntheseJoursCours") or 0
-    frequence = o.get("NbFrequence") or 99
-    if masque & DIMANCHE and frequence <= 1:
-        return True
-    return bool(masque & SAMEDI) and frequence == TOUS_LES_15_JOURS
+    return bool(masque & (SAMEDI | DIMANCHE))
 
 
 DUREE_MIN = 1.5  # heures : 1h30 ou plus
